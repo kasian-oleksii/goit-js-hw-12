@@ -1,95 +1,96 @@
+import iziToast from 'izitoast';
+import 'izitoast/dist/css/iziToast.min.css';
+
 import { getImagesByQuery } from './js/pixabay-api.js';
 import {
   createGallery,
   clearGallery,
   showLoader,
   hideLoader,
-  showLoadMoreButton,
   hideLoadMoreButton,
+  showLoadMoreButton,
 } from './js/render-functions.js';
-import iziToast from 'izitoast';
-import 'izitoast/dist/css/iziToast.min.css';
 
-const form = document.getElementById('search-form');
-const loadMoreBtn = document.getElementById('load-more');
+const form = document.querySelector('.form');
+const loadMoreBtn = document.querySelector('.load-more');
 
-let query = '';
+let query;
 let page = 1;
-let totalHits = 0;
+const perPage = 15; // Added this so that i can dynamically change per_page query
 
-form.addEventListener('submit', async e => {
+form.addEventListener('submit', e => {
   e.preventDefault();
-  query = e.target.elements.searchQuery.value.trim();
-  if (!query) {
-    iziToast.warning({
-      title: 'Warning',
-      message: 'Please enter a search query',
-    });
-    return;
-  }
+
+  hideLoadMoreButton();
+
+  clearGallery();
+
+  query = e.target.elements['search-text'].value.trim();
+
+  if (!query) return;
 
   page = 1;
-  clearGallery();
+
+  showImages(query);
+});
+
+loadMoreBtn.addEventListener('click', e => {
   hideLoadMoreButton();
+
+  page++;
+
+  showImages(query);
+
+  scrollView();
+});
+
+async function showImages(query) {
   showLoader();
 
   try {
-    const data = await getImagesByQuery(query, page);
-    totalHits = data.totalHits;
+    const data = await getImagesByQuery(query, page, perPage);
+    const images = data.hits;
 
-    if (data.hits.length === 0) {
-      iziToast.info({
-        title: 'Info',
-        message: 'No images found. Please try another query.',
+    if (images && images.length > 0) {
+      createGallery(images);
+
+      if (page >= Math.ceil(data.totalHits / perPage)) {
+        iziToast.show({
+          title: 'ℹ️',
+          message: "We're sorry, but you've reached the end of search results.",
+          messageColor: 'white',
+          titleColor: 'white',
+          backgroundColor: '#4CAF50',
+          position: 'topRight',
+        });
+      } else {
+        showLoadMoreButton();
+      }
+    } else {
+      iziToast.show({
+        title: '❌',
+        message: `Sorry, there are no images matching your search query. Please try again!`,
+        messageColor: 'white',
+        titleColor: 'white',
+        backgroundColor: '#ef4040',
+        position: 'topRight',
       });
-      return;
     }
-
-    createGallery(data.hits);
-    iziToast.success({
-      title: 'Success',
-      message: `Hooray! We found ${totalHits} images.`,
-    });
-
-    if (totalHits > 15) {
-      showLoadMoreButton();
-    }
-  } catch (error) {
-    iziToast.error({
-      title: 'Error',
-      message: 'Failed to fetch images. Please try again later.',
-    });
+  } catch (err) {
+    console.error(err);
   } finally {
     hideLoader();
   }
-});
+}
 
-loadMoreBtn.addEventListener('click', async () => {
-  page += 1;
-  showLoader();
-
-  try {
-    const data = await getImagesByQuery(query, page);
-    createGallery(data.hits);
-
-    const { height: cardHeight } = document
-      .querySelector('.gallery')
-      .firstElementChild.getBoundingClientRect();
-    window.scrollBy({ top: cardHeight * 2, behavior: 'smooth' });
-
-    if (page * 15 >= totalHits) {
-      hideLoadMoreButton();
-      iziToast.info({
-        title: 'Info',
-        message: "We're sorry, but you've reached the end of search results.",
-      });
-    }
-  } catch (error) {
-    iziToast.error({
-      title: 'Error',
-      message: 'Failed to fetch more images. Please try again later.',
+function scrollView() {
+  const galleryItem = document.querySelector('.gallery-item');
+  if (!galleryItem) return;
+  setTimeout(() => {
+    scrollBy({
+      top: galleryItem.getBoundingClientRect().height * 2,
+      left: 0,
+      behavior: 'smooth',
     });
-  } finally {
-    hideLoader();
-  }
-});
+  }, 200); // Added delay because i don`t like immediate scroll
+}

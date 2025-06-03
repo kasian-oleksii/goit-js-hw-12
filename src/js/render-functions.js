@@ -1,63 +1,62 @@
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 
-let lightbox;
+const gallery = document.querySelector('.gallery');
+const loader = document.querySelector('.loader');
+const loadMoreBtn = document.querySelector('.load-more');
+
+const galleryBox = new SimpleLightbox('.gallery a', {
+  captionsData: 'alt',
+  captionDelay: 250,
+});
 
 export function createGallery(images) {
-  const gallery = document.getElementById('gallery');
-
   const markup = images
     .map(image => {
+      const {
+        webformatURL,
+        largeImageURL,
+        tags,
+        likes,
+        views,
+        comments,
+        downloads,
+      } = image;
       return `
-        <li class="gallery-item">
-          <a href="${image.largeImageURL}">
-            <img src="${image.webformatURL}" alt="${image.tags}" loading="lazy" />
-          </a>
-          <div class="info">
-            <div class="info-item">
-              <b>Likes</b>${image.likes}
-            </div>
-            <div class="info-item">
-              <b>Views</b>${image.views}
-            </div>
-            <div class="info-item">
-              <b>Comments</b>${image.comments}
-            </div>
-            <div class="info-item">
-              <b>Downloads</b>${image.downloads}
-            </div>
-          </div>
-        </li>
-      `;
+      <li class="gallery-item">
+        <a href="${largeImageURL}"><img class="gallery-image" src="${webformatURL}" alt="${tags}"/></a>
+        <div class="stats">
+          <p><span>Likes</span><span>${likes}</span></p>
+          <p><span>Views</span><span>${views}</span></p>
+          <p><span>Comments</span><span>${comments}</span></p>
+          <p><span>Downloads</span><span>${downloads}</span></p>
+        </div>
+      </li>
+        `;
     })
     .join('');
 
   gallery.insertAdjacentHTML('beforeend', markup);
 
-  if (!lightbox) {
-    lightbox = new SimpleLightbox('.gallery a');
-  } else {
-    lightbox.refresh();
-  }
+  galleryBox.refresh();
 }
 
 export function clearGallery() {
-  const gallery = document.getElementById('gallery');
   gallery.innerHTML = '';
 }
 
 export function showLoader() {
-  document.getElementById('loader').classList.remove('hidden');
+  loader.style.visibility = 'visible';
 }
 
 export function hideLoader() {
-  document.getElementById('loader').classList.add('hidden');
+  loader.style.visibility = 'hidden';
 }
 
 export function showLoadMoreButton() {
-  document.getElementById('load-more').classList.remove('hidden');
+  loadMoreBtn.style.visibility = 'visible';
 }
 
 export function hideLoadMoreButton() {
-  document.getElementById('load-more').classList.add('hidden');
+  loadMoreBtn.style.visibility = 'hidden';
 }
